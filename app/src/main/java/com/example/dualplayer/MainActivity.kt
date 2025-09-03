@@ -1,280 +1,209 @@
 package com.example.dualplayer
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Button
-import android.widget.SeekBar
-import android.widget.TextView
-import android.widget.Toast
+import android.provider.DocumentsContract
+import android.view.View
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.documentfile.provider.DocumentFile
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import kotlin.math.max
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), PlayerAdapter.Listener {
 
-    // Players
-    private var discoursePlayer: ExoPlayer? = null
-    private var musicPlayer: ExoPlayer? = null
+    private lateinit var discTitle: TextView
+    private lateinit var discPlay: ImageButton
+    private lateinit var discPrev: ImageButton
+    private lateinit var discNext: ImageButton
+    private lateinit var discSeek: SeekBar
+    private lateinit var discVolume: SeekBar
 
-    // UI
-    private lateinit var selectDiscourseBtn: Button
-    private lateinit var playPauseDiscourseBtn: Button
-    private lateinit var nextDiscourseBtn: Button
-    private lateinit var discourseVolume: SeekBar
-    private lateinit var discourseTitle: TextView
-
-    private lateinit var selectMusicBtn: Button
-    private lateinit var playPauseMusicBtn: Button
-    private lateinit var musicVolume: SeekBar
     private lateinit var musicTitle: TextView
+    private lateinit var musicPlay: ImageButton
+    private lateinit var musicPrev: ImageButton
+    private lateinit var musicNext: ImageButton
+    private lateinit var musicSeek: SeekBar
+    private lateinit var musicVolume: SeekBar
 
-    // State
-    private var discourseFolderUri: Uri? = null
-    private var musicFolderUri: Uri? = null
+    private lateinit var selectDiscBtn: Button
+    private lateinit var selectMusicBtn: Button
 
-    private var discourseFiles: List<DocumentFile> = emptyList()
-    private var musicFiles: List<DocumentFile> = emptyList()
-    private var currentDiscourseIndex = 0
+    private lateinit var playlistRecycler: RecyclerView
+    private lateinit var adapter: PlayerAdapter
 
-    // SharedPreferences key prefix
-    private val PREFS = "osho_prefs"
-    private val LAST_POS_PREFIX = "last_pos_" // + fileUri
+    // current playlist (document files)
+    private var currentList: List<DocumentFile> = emptyList()
+    private var currentIsDiscourse = true
 
-    // Activity result launchers
-    private val pickDiscourseFolder =
+    private val prefsName = "osho_prefs"
+
+    private val pickFolderLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-            if (uri != null) {
-                contentResolver.takePersistableUriPermission(uri, IntentFlags)
-                discourseFolderUri = uri
-                loadDiscourseFolder(uri)
+            if (uri == null) return@registerForActivityResult
+            // keep persistable permission
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val picked = DocumentFile.fromTreeUri(this, uri)
+            if (picked != null && picked.isDirectory) {
+                val audios = picked.listFiles()
+                    .filter { it.isFile && (it.type?.startsWith("audio") == true) }
+                    .sortedBy { it.name?.lowercase() }
+                if (audios.isEmpty()) {
+                    Toast.makeText(this, "No audio files found", Toast.LENGTH_SHORT).show()
+                    return@registerForActivityResult
+                }
+                // store folder uri
+                val key = if (currentIsDiscourse) "discourse_folder_uri" else "music_folder_uri"
+                getSharedPreferences(prefsName, Context.MODE_PRIVATE).edit()
+                    .putString(key, uri.toString()).apply()
+
+                currentList = audios
+                adapter.submitList(currentList)
+                playlistRecycler.scrollToPosition(0)
+
+                // auto play first item (send to corresponding service)
+                val firstUri = currentList[0].uri
+                if (currentIsDiscourse) {
+                    discTitle.text = currentList[0].name
+                    val i = Intent(this, DiscourseService::class.java).apply {
+                        action = DiscourseService.ACTION_PLAY_FILE
+                        putExtra("fileUri", firstUri.toString())
+                    }
+                    startService(i)
+                    discPlay.setImageResource(android.R.drawable.ic_media_pause)
+                } else {
+                    musicTitle.text = currentList[0].name
+                    val i = Intent(this, MusicService::class.java).apply {
+                        action = MusicService.ACTION_PLAY_FILE
+                        putExtra("fileUri", firstUri.toString())
+                    }
+                    startService(i)
+                    musicPlay.setImageResource(android.R.drawable.ic_media_pause)
+                }
             }
         }
-
-    private val pickMusicFolder =
-        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-            if (uri != null) {
-                contentResolver.takePersistableUriPermission(uri, IntentFlags)
-                musicFolderUri = uri
-                loadMusicFolder(uri)
-            }
-        }
-
-    companion object {
-        // persist read permission (readable + writable)
-        private const val IntentFlags =
-            (android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        bindViews()
+        adapter = PlayerAdapter(this)
+        playlistRecycler.adapter = adapter
+        playlistRecycler.layoutManager = LinearLayoutManager(this)
 
-        // Bind UI
-        selectDiscourseBtn = findViewById(R.id.selectDiscourseFolder)
-        playPauseDiscourseBtn = findViewById(R.id.playPauseDiscourse)
-        nextDiscourseBtn = findViewById(R.id.nextDiscourse)
-        discourseVolume = findViewById(R.id.volumeDiscourse)
-        discourseTitle = findViewById(R.id.discourseTitle)
+        selectDiscBtn.setOnClickListener {
+            currentIsDiscourse = true
+            pickFolderLauncher.launch(null)
+        }
+        selectMusicBtn.setOnClickListener {
+            currentIsDiscourse = false
+            pickFolderLauncher.launch(null)
+        }
 
-        selectMusicBtn = findViewById(R.id.selectMusicFolder)
-        playPauseMusicBtn = findViewById(R.id.playPauseMusic)
-        musicVolume = findViewById(R.id.volumeMusic)
+        // Buttons send Intents to services
+        discPlay.setOnClickListener {
+            val action = if (discPlay.tag == "playing") DiscourseService.ACTION_PAUSE else DiscourseService.ACTION_PLAY
+            startService(Intent(this, DiscourseService::class.java).setAction(action))
+            toggleButtonState(discPlay)
+        }
+        discPrev.setOnClickListener {
+            startService(Intent(this, DiscourseService::class.java).setAction(DiscourseService.ACTION_PREV))
+        }
+        discNext.setOnClickListener {
+            startService(Intent(this, DiscourseService::class.java).setAction(DiscourseService.ACTION_NEXT))
+        }
+
+        musicPlay.setOnClickListener {
+            val action = if (musicPlay.tag == "playing") MusicService.ACTION_PAUSE else MusicService.ACTION_PLAY
+            startService(Intent(this, MusicService::class.java).setAction(action))
+            toggleButtonState(musicPlay)
+        }
+        musicPrev.setOnClickListener {
+            startService(Intent(this, MusicService::class.java).setAction(MusicService.ACTION_PREV))
+        }
+        musicNext.setOnClickListener {
+            startService(Intent(this, MusicService::class.java).setAction(MusicService.ACTION_NEXT))
+        }
+
+        // load saved folder URIs if present and populate list for discourse by default
+        val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+        prefs.getString("discourse_folder_uri", null)?.let {
+            tryRestoreFolder(Uri.parse(it), true)
+        }
+        prefs.getString("music_folder_uri", null)?.let {
+            // keep music folder if you want; don't auto-list to avoid confusion
+        }
+    }
+
+    private fun tryRestoreFolder(uri: Uri, isDiscourse: Boolean) {
+        val doc = DocumentFile.fromTreeUri(this, uri)
+        if (doc != null && doc.isDirectory) {
+            val audios = doc.listFiles().filter { it.isFile && (it.type?.startsWith("audio") == true) }
+                .sortedBy { it.name?.lowercase() }
+            if (audios.isNotEmpty() && isDiscourse) {
+                currentIsDiscourse = true
+                currentList = audios
+                adapter.submitList(currentList)
+                discTitle.text = currentList[0].name
+            }
+        }
+    }
+
+    private fun bindViews() {
+        discTitle = findViewById(R.id.discourseTitle)
+        discPlay = findViewById(R.id.discPlayPause)
+        discPrev = findViewById(R.id.discPrev)
+        discNext = findViewById(R.id.discNext)
+        discSeek = findViewById(R.id.discSeek)
+        discVolume = findViewById(R.id.discVolume)
+        selectDiscBtn = findViewById(R.id.selectDiscourseFolder)
+
         musicTitle = findViewById(R.id.musicTitle)
+        musicPlay = findViewById(R.id.musicPlayPause)
+        musicPrev = findViewById(R.id.musicPrev)
+        musicNext = findViewById(R.id.musicNext)
+        musicSeek = findViewById(R.id.musicSeek)
+        musicVolume = findViewById(R.id.musicVolume)
+        selectMusicBtn = findViewById(R.id.selectMusicFolder)
 
-        // Initialize players
-        discoursePlayer = ExoPlayer.Builder(this).build()
-        musicPlayer = ExoPlayer.Builder(this).build()
+        playlistRecycler = findViewById(R.id.playlistRecycler)
+    }
 
-        // Default volumes
-        discoursePlayer?.volume = 1.0f
-        musicPlayer?.volume = 0.5f
-        discourseVolume.progress = 100
-        musicVolume.progress = 50
+    private fun toggleButtonState(btn: ImageButton) {
+        val playing = btn.tag == "playing"
+        if (playing) {
+            btn.setImageResource(android.R.drawable.ic_media_play)
+            btn.tag = "paused"
+        } else {
+            btn.setImageResource(android.R.drawable.ic_media_pause)
+            btn.tag = "playing"
+        }
+    }
 
-        // Button listeners
-        selectDiscourseBtn.setOnClickListener { pickDiscourseFolder.launch(null) }
-        selectMusicBtn.setOnClickListener { pickMusicFolder.launch(null) }
-
-        playPauseDiscourseBtn.setOnClickListener {
-            val p = discoursePlayer ?: return@setOnClickListener
-            if (p.isPlaying) {
-                p.pause()
-                saveLastPositionForCurrentDiscourse()
-                playPauseDiscourseBtn.text = "Play Discourse"
-            } else {
-                p.play()
-                playPauseDiscourseBtn.text = "Pause Discourse"
+    // Recycler item clicked -> play selected file (dispatch to appropriate service)
+    override fun onAudioClick(documentFile: DocumentFile) {
+        val uri = documentFile.uri
+        if (currentIsDiscourse) {
+            discTitle.text = documentFile.name
+            val i = Intent(this, DiscourseService::class.java).apply {
+                action = DiscourseService.ACTION_PLAY_FILE
+                putExtra("fileUri", uri.toString())
             }
-        }
-
-        playPauseMusicBtn.setOnClickListener {
-            val p = musicPlayer ?: return@setOnClickListener
-            if (p.isPlaying) {
-                p.pause()
-                playPauseMusicBtn.text = "Play Music"
-            } else {
-                p.play()
-                playPauseMusicBtn.text = "Pause Music"
+            startService(i)
+            discPlay.setImageResource(android.R.drawable.ic_media_pause)
+            discPlay.tag = "playing"
+        } else {
+            musicTitle.text = documentFile.name
+            val i = Intent(this, MusicService::class.java).apply {
+                action = MusicService.ACTION_PLAY_FILE
+                putExtra("fileUri", uri.toString())
             }
+            startService(i)
+            musicPlay.setImageResource(android.R.drawable.ic_media_pause)
+            musicPlay.tag = "playing"
         }
-
-        nextDiscourseBtn.setOnClickListener {
-            if (discourseFiles.isEmpty()) {
-                toast("No discourse folder selected")
-                return@setOnClickListener
-            }
-            currentDiscourseIndex = (currentDiscourseIndex + 1) % discourseFiles.size
-            playDiscourseAtIndex(currentDiscourseIndex)
-        }
-
-        // Volume sliders
-        discourseVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                discoursePlayer?.volume = progress / 100f
-            }
-            override fun onStartTrackingTouch(sb: SeekBar?) {}
-            override fun onStopTrackingTouch(sb: SeekBar?) {}
-        })
-
-        musicVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                musicPlayer?.volume = progress / 100f
-            }
-            override fun onStartTrackingTouch(sb: SeekBar?) {}
-            override fun onStopTrackingTouch(sb: SeekBar?) {}
-        })
-
-        // Try to restore previously selected folder URIs from prefs (optional)
-        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val dUri = prefs.getString("discourse_folder_uri", null)
-        val mUri = prefs.getString("music_folder_uri", null)
-        if (dUri != null) {
-            discourseFolderUri = Uri.parse(dUri)
-            loadDiscourseFolder(discourseFolderUri!!)
-        }
-        if (mUri != null) {
-            musicFolderUri = Uri.parse(mUri)
-            loadMusicFolder(musicFolderUri!!)
-        }
-    }
-
-    private fun loadDiscourseFolder(uri: Uri) {
-        val doc = DocumentFile.fromTreeUri(this, uri)
-        if (doc == null || !doc.isDirectory) {
-            toast("Selected path is not a folder")
-            return
-        }
-        // filter audio files
-        discourseFiles = doc.listFiles()
-            .filter { it.isFile && (it.type?.startsWith("audio") == true) }
-            .sortedBy { it.name?.lowercase() } // sort alphabetical
-        if (discourseFiles.isEmpty()) {
-            toast("No audio files found in selected discourse folder")
-            discourseTitle.text = "No discourse selected"
-            return
-        }
-        // save chosen folder uri persistently
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString("discourse_folder_uri", uri.toString()).apply()
-
-        // start from first or last known index
-        currentDiscourseIndex = 0
-        playDiscourseAtIndex(currentDiscourseIndex)
-    }
-
-    private fun loadMusicFolder(uri: Uri) {
-        val doc = DocumentFile.fromTreeUri(this, uri)
-        if (doc == null || !doc.isDirectory) {
-            toast("Selected path is not a folder")
-            return
-        }
-        musicFiles = doc.listFiles()
-            .filter { it.isFile && (it.type?.startsWith("audio") == true) }
-            .sortedBy { it.name?.lowercase() }
-        if (musicFiles.isEmpty()) {
-            toast("No audio files found in selected music folder")
-            musicTitle.text = "No music selected"
-            return
-        }
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString("music_folder_uri", uri.toString()).apply()
-
-        // For background music, we'll just load the first file and loop it.
-        playMusicAtIndex(0)
-    }
-
-    private fun playDiscourseAtIndex(index: Int) {
-        if (discourseFiles.isEmpty()) return
-        val file = discourseFiles[index]
-        discourseTitle.text = file.name ?: "Discourse"
-        val uri = file.uri
-        val player = discoursePlayer ?: return
-        player.stop()
-        player.clearMediaItems()
-        player.setMediaItem(MediaItem.fromUri(uri))
-        player.prepare()
-
-        // Seek to saved position for this file if present
-        val lastPos = getLastSavedPosition(uri.toString())
-        if (lastPos > 0) {
-            // clamp to file length later if needed
-            player.seekTo(max(0L, lastPos))
-        }
-        player.play()
-        playPauseDiscourseBtn.text = "Pause Discourse"
-    }
-
-    private fun playMusicAtIndex(index: Int) {
-        if (musicFiles.isEmpty()) return
-        val file = musicFiles[index]
-        musicTitle.text = file.name ?: "Music"
-        val uri = file.uri
-        val player = musicPlayer ?: return
-        player.stop()
-        player.clearMediaItems()
-        val item = MediaItem.fromUri(uri)
-        player.setMediaItem(item)
-        player.repeatMode = ExoPlayer.REPEAT_MODE_ONE
-        player.prepare()
-        player.play()
-        playPauseMusicBtn.text = "Pause Music"
-    }
-
-    // Save last position for current discourse file
-    private fun saveLastPositionForCurrentDiscourse() {
-        val player = discoursePlayer ?: return
-        val currentUri = discourseFiles.getOrNull(currentDiscourseIndex)?.uri ?: return
-        val pos = player.currentPosition
-        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putLong(LAST_POS_PREFIX + currentUri.toString(), pos)
-            .apply()
-    }
-
-    private fun getLastSavedPosition(fileUriString: String): Long {
-        return getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getLong(LAST_POS_PREFIX + fileUriString, 0L)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        // Save discourse position when app goes background
-        saveLastPositionForCurrentDiscourse()
-        discoursePlayer?.pause()
-        musicPlayer?.pause()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        discoursePlayer?.release()
-        musicPlayer?.release()
-    }
-
-    private fun toast(msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }
