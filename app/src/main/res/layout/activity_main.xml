@@ -1,38 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:background="#121212"
-    android:padding="20dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/playDiscourseBtn"
+    <LinearLayout
+        android:layout_margin="16dp"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Play / Pause Discourse"
-        android:background="#333333"
-        android:textColor="#FFFFFF"/>
+        android:layout_height="wrap_content">
 
-    <SeekBar
-        android:id="@+id/discourseVolume"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="100"/>
+        <TextView
+            android:id="@+id/discourseTitle"
+            android:text="No discourse selected"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
-    <Button
-        android:id="@+id/playMusicBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Play / Pause Music"
-        android:background="#333333"
-        android:textColor="#FFFFFF"/>
+        <Button
+            android:id="@+id/selectDiscourseFolder"
+            android:text="Select Discourse Folder"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"/>
 
-    <SeekBar
-        android:id="@+id/musicVolume"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="100"/>
+        <Button
+            android:id="@+id/playPauseDiscourse"
+            android:text="Play Discourse"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"/>
 
-</LinearLayout>
+        <SeekBar
+            android:id="@+id/volumeDiscourse"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/nextDiscourse"
+            android:text="Next Discourse"
+            android:layout_marginBottom="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"/>
+
+        <View android:layout_height="1dp" android:background="#333" android:layout_marginBottom="12dp" android:layout_width="match_parent"/>
+
+        <TextView
+            android:id="@+id/musicTitle"
+            android:text="No music selected"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/selectMusicFolder"
+            android:text="Select Music Folder"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"/>
+
+        <Button
+            android:id="@+id/playPauseMusic"
+            android:text="Play Music"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"/>
+
+        <SeekBar
+            android:id="@+id/volumeMusic"
+            android:layout_marginBottom="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+</ScrollView>
