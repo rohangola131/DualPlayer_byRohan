@@ -1,5 +1,6 @@
 package com.example.dualplayer
 
+import androidx.media.app.NotificationCompat
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -111,7 +112,7 @@ class MusicService : Service() {
                 if (player?.isPlaying == true) pauseIntent else playIntent
             )
             .addAction(android.R.drawable.ic_media_next, "Next", null) // TODO hook next
-            .setStyle(MediaStyle().setShowActionsInCompactView(0, 1, 2))
+            .setStyle(NotificationCompat.MediaStyle())
             .setOngoing(player?.isPlaying == true)
             .build()
     }
