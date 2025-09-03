@@ -24,6 +24,9 @@ jobs:
         with:
           gradle-version: "8.7"
 
+      - name: Clean build
+        run: gradle clean --no-daemon 
+
       - name: Build Debug APK
         # use system 'gradle' (not ./gradlew) — avoids missing wrapper issue
         run: gradle assembleDebug --no-daemon
