@@ -1,150 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:padding="12dp">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="8dp">
 
-        <!-- Discourse Player -->
-        <androidx.cardview.widget.CardView
+        <!-- Section 1: Discourse Player -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📖 Discourse Player"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/selectDiscourseFolder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Discourse Folder" />
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="6dp"
-            android:layout_marginBottom="16dp">
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/discPrev"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:text="⏮ Prev" />
 
-                <TextView
-                    android:id="@+id/discourseTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Select Discourse"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+            <Button
+                android:id="@+id/discPlayPause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▶️ Play"
+                android:layout_marginHorizontal="12dp" />
 
-                <Button
-                    android:id="@+id/btnSelectDiscourse"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Choose Folder" />
+            <Button
+                android:id="@+id/discNext"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next ⏭" />
+        </LinearLayout>
 
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:layout_marginTop="8dp">
-
-                    <ImageButton
-                        android:id="@+id/btnPrevDiscourse"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_media_previous"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-
-                    <ImageButton
-                        android:id="@+id/btnPlayPauseDiscourse"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:src="@android:drawable/ic_media_play"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-
-                    <ImageButton
-                        android:id="@+id/btnNextDiscourse"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_media_next"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-                </LinearLayout>
-
-                <SeekBar
-                    android:id="@+id/seekDiscourseVolume"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="100"
-                    android:progress="50"
-                    android:layout_marginTop="8dp" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Music Player -->
-        <androidx.cardview.widget.CardView
+        <SeekBar
+            android:id="@+id/discSeek"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="6dp">
+            android:layout_marginTop="8dp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+        <SeekBar
+            android:id="@+id/discVolume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#cccccc"
+            android:layout_marginVertical="12dp" />
+
+        <!-- Section 2: Music Player -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎵 Music Player"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/selectMusicFolder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Music Folder" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/musicPrev"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:text="⏮ Prev" />
 
-                <TextView
-                    android:id="@+id/musicTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Select Music"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+            <Button
+                android:id="@+id/musicPlayPause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▶️ Play"
+                android:layout_marginHorizontal="12dp" />
 
-                <Button
-                    android:id="@+id/btnSelectMusic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Choose Folder" />
+            <Button
+                android:id="@+id/musicNext"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next ⏭" />
+        </LinearLayout>
 
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:layout_marginTop="8dp">
+        <SeekBar
+            android:id="@+id/musicSeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
 
-                    <ImageButton
-                        android:id="@+id/btnPrevMusic"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_media_previous"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+        <SeekBar
+            android:id="@+id/musicVolume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
 
-                    <ImageButton
-                        android:id="@+id/btnPlayPauseMusic"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:src="@android:drawable/ic_media_play"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-
-                    <ImageButton
-                        android:id="@+id/btnNextMusic"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_media_next"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-                </LinearLayout>
-
-                <SeekBar
-                    android:id="@+id/seekMusicVolume"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="100"
-                    android:progress="50"
-                    android:layout_marginTop="8dp" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        <!-- Playlist RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/playlistRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="16dp"
+            android:scrollbars="vertical" />
 
     </LinearLayout>
 </ScrollView>
