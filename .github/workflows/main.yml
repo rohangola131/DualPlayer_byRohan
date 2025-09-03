@@ -1,17 +1,16 @@
-name: Android CI
+name: Android CI - Debug APK
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: {}
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -20,14 +19,24 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Install Gradle
-        uses: gradle/gradle-build-action@v3
+      - name: Install Gradle CLI
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        # use system 'gradle' (not ./gradlew) — avoids missing wrapper issue
+        run: gradle assembleDebug --no-daemon
 
-      - name: Upload Debug APK
+      - name: Show APK output files (for debugging)
+        run: |
+          echo "Listing APK output folders..."
+          ls -la app/build/outputs/apk || true
+          ls -la app/build/outputs/apk/debug || true
+
+      - name: Upload Debug APK(s)
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          # upload any debug apk(s) that were produced
+          path: app/build/outputs/apk/debug/*.apk
