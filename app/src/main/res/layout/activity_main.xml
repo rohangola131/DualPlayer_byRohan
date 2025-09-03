@@ -12,13 +12,19 @@
         android:padding="8dp">
 
         <!-- Section 1: Discourse Player -->
-        <TextView
+       <TextView
+            android:id="@+id/discourseTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="📖 Discourse Player"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingBottom="8dp" />
+            android:text="No discourse selected"
+            android:textSize="14sp"
+            android:paddingTop="4dp"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:scrollHorizontally="true" />
 
         <Button
             android:id="@+id/selectDiscourseFolder"
@@ -73,13 +79,19 @@
             android:layout_marginVertical="12dp" />
 
         <!-- Section 2: Music Player -->
-        <TextView
+       <TextView
+            android:id="@+id/musicTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🎵 Music Player"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingBottom="8dp" />
+            android:text="No music selected"
+            android:textSize="14sp"
+            android:paddingTop="4dp"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:scrollHorizontally="true" />
 
         <Button
             android:id="@+id/selectMusicFolder"
